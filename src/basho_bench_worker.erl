@@ -235,6 +235,16 @@ worker_idle_loop(State) ->
                     %% fixed rate worker can generate (at max) only 1k req/sec.
                     MeanArrival = 1000 / Rate,
                     ?INFO("Starting ~w ms/req fixed rate worker: ~p on ~p\n", [MeanArrival, self(), node()]),
+                    rate_worker_run_loop(State, 1 / MeanArrival);
+                 {rate_delayed, Rate, Divisor} ->
+                    MeanArrival = 1000 / Rate,
+                    Duration = basho_bench_config:get(duration),
+                    DurationInMillis = Duration * 60 * 1000,
+                    case rand:uniform(Divisor) - 1 of
+                        0 -> ok;
+                        Slice -> timer:sleep(trunc(Slice * DurationInMillis / Divisor))
+                    end,
+                    ?INFO("Starting ~w ms/req fixed rate worker: ~p on ~p\n", [MeanArrival, self(), node()]),
                     rate_worker_run_loop(State, 1 / MeanArrival)
             end
     end.
