@@ -41,7 +41,6 @@
                  shutdown_on_error,
                  ops,
                  ops_len,
-                 rng_seed,
                  parent_pid,
                  worker_pid,
                  sup_id}).
@@ -53,10 +52,10 @@
 %% ====================================================================
 
 start_link(SupChild, Id) ->
-    case basho_bench_config:get(distribute_work, false) of 
-        true -> 
+    case basho_bench_config:get(distribute_work, false) of
+        true ->
             start_link_distributed(SupChild, Id);
-        false -> 
+        false ->
             start_link_local(SupChild, Id)
     end.
 
@@ -89,13 +88,6 @@ init([SupChild, Id]) ->
     %% The RNG_SEED is static by default for replicability of key size
     %% and value size generation between test runs.
     process_flag(trap_exit, true),
-    {A1, A2, A3} =
-        case basho_bench_config:get(rng_seed, {42, 23, 12}) of
-            {Aa, Ab, Ac} -> {Aa, Ab, Ac};
-            now -> now()
-        end,
-
-    RngSeed = {A1+Id, A2+Id, A3+Id},
 
     %% Pull all config settings from environment
     Driver  = basho_bench_config:get(driver),
@@ -111,7 +103,6 @@ init([SupChild, Id]) ->
                      driver = Driver,
                      shutdown_on_error = ShutdownOnError,
                      ops = Ops, ops_len = size(Ops),
-                     rng_seed = RngSeed,
                      parent_pid = self(),
                      sup_id = SupChild},
 
@@ -213,7 +204,7 @@ worker_init(State) ->
     %% Trap exits from linked parent process; use this to ensure the driver
     %% gets a chance to cleanup
     process_flag(trap_exit, true),
-    random:seed(State#state.rng_seed),
+    rand:seed(exs1024s),
     worker_idle_loop(State).
 
 worker_idle_loop(State) ->
@@ -252,7 +243,7 @@ worker_next_op2(State, OpTag) ->
    catch (State#state.driver):run(OpTag, State#state.keygen, State#state.valgen,
                                   State#state.driver_state).
 worker_next_op(State) ->
-    Next = element(random:uniform(State#state.ops_len), State#state.ops),
+    Next = element(rand:uniform(State#state.ops_len), State#state.ops),
     {_Label, OpTag} = Next,
     Start = os:timestamp(),
     Result = worker_next_op2(State, OpTag),
