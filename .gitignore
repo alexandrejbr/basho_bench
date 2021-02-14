@@ -7,4 +7,5 @@ package
 .rebar
 *~
 #*#
-
+_build
+*.beam

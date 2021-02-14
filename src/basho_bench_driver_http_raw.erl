@@ -125,7 +125,7 @@ new(Id) ->
     BaseUrls = list_to_tuple([#url{host=IP, port=Port, path=Path}
                               || {IP, Port} <- Targets,
                                  sanity_check_hostname(IP)]),
-    BaseUrlsIndex = random:uniform(tuple_size(BaseUrls)),
+    BaseUrlsIndex = rand:uniform(tuple_size(BaseUrls)),
 
     SSL_options = case basho_bench_config:get(http_use_ssl, false) of
                       false ->
